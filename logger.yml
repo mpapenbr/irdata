@@ -14,4 +14,4 @@ zap:
       layout: "15:04:05.000"
     durationEncoder: "string"
 loggers:
-  demoLogger: debug
+  ir-s3: info

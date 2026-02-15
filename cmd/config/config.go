@@ -8,5 +8,6 @@ var (
 	LogConfig         string
 	LogLevel          string
 	OtelOutput        string // output for otel-logger (stdout, grpc)
+	CacheDir          string
 	IrAuthConfig      auth.AuthConfig
 )

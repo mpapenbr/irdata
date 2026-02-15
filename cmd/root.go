@@ -16,6 +16,8 @@ import (
 
 	"github.com/mpapenbr/irdata/cmd/auth"
 	"github.com/mpapenbr/irdata/cmd/config"
+	"github.com/mpapenbr/irdata/cmd/populate"
+	"github.com/mpapenbr/irdata/cmd/series"
 	"github.com/mpapenbr/irdata/log"
 	"github.com/mpapenbr/irdata/otel"
 	"github.com/mpapenbr/irdata/version"
@@ -119,8 +121,22 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&removeContextFields, "remove-context-fields",
 		true,
 		"if true, don't log fields that contain a context.Context")
+	rootCmd.PersistentFlags().StringVar(&config.CacheDir, "cache-dir",
+		"", "directory to store cache files")
 
+	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.ClientID,
+		"client-id", "", "iRacing API client ID")
+	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.ClientSecret,
+		"client-secret", "", "iRacing API client secret")
+	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.Username,
+		"username", "", "iRacing username")
+	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.Password,
+		"password", "", "iRacing password")
+	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.AuthFile,
+		"auth-file", "", "temp. auth file")
 	rootCmd.AddCommand(auth.NewAuthCommand())
+	rootCmd.AddCommand(series.NewSeriesCommand())
+	rootCmd.AddCommand(populate.NewPopulateCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())
 }

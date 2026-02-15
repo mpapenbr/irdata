@@ -84,6 +84,7 @@ func (tm *TokenManager) Login() error {
 		fmt.Printf("%s\n", exp.String())
 		if exp.After(time.Now()) {
 			log.Debug("refresh token is valid, refreshing access token...")
+			tm.doRefresh()
 			tm.setupTokenRefresh()
 			return nil
 		}
@@ -161,10 +162,11 @@ func (tm *TokenManager) doLogin() error {
 	data.Set("client_secret",
 		tm.hashSecret(tm.cfg.authConfig.ClientSecret, tm.cfg.authConfig.ClientID))
 	data.Set("grant_type", "password_limited")
+	data.Set("scope", "iracing.auth")
 
 	req, err := http.NewRequestWithContext(
 		tm.ctx,
-		"POST",
+		http.MethodPost,
 		tokenURL,
 		strings.NewReader(data.Encode()))
 	if err != nil {
@@ -205,7 +207,7 @@ func (tm *TokenManager) doRefresh() error {
 
 	req, err := http.NewRequestWithContext(
 		tm.ctx,
-		"POST",
+		http.MethodPost,
 		tokenURL,
 		strings.NewReader(data.Encode()))
 	if err != nil {
