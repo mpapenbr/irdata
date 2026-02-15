@@ -22,3 +22,4 @@ dist/**
 .npmrc
 .irdata.yml
 .auth.json
+.cache/

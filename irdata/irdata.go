@@ -152,5 +152,6 @@ func (i *IrData) Get(uri string) ([]byte, error) {
 			return nil, err
 		}
 	}
+	i.cfg.cache.Set(uri, body)
 	return body, nil
 }

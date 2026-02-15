@@ -11,6 +11,6 @@ func NewPopulateCommand() *cobra.Command {
 		Long:  ``,
 	}
 
-	// cmd.AddCommand(NewLoginCommand())
+	cmd.AddCommand(NewPopulateSeriesCommand())
 	return &cmd
 }
