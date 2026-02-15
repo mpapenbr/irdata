@@ -17,7 +17,6 @@ import (
 	"github.com/mpapenbr/irdata/cmd/auth"
 	"github.com/mpapenbr/irdata/cmd/config"
 	"github.com/mpapenbr/irdata/cmd/populate"
-	"github.com/mpapenbr/irdata/cmd/series"
 	"github.com/mpapenbr/irdata/log"
 	"github.com/mpapenbr/irdata/otel"
 	"github.com/mpapenbr/irdata/version"
@@ -86,6 +85,7 @@ func Execute() {
 	log.Sync()
 }
 
+//nolint:funlen // much to do here
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -135,7 +135,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.AuthFile,
 		"auth-file", "", "temp. auth file")
 	rootCmd.AddCommand(auth.NewAuthCommand())
-	rootCmd.AddCommand(series.NewSeriesCommand())
+
 	rootCmd.AddCommand(populate.NewPopulateCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())

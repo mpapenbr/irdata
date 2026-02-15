@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/dgraph-io/badger/v4"
+
 	"github.com/mpapenbr/irdata/auth"
 	"github.com/mpapenbr/irdata/cache"
 	"github.com/mpapenbr/irdata/cmd/config"

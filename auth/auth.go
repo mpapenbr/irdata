@@ -62,6 +62,7 @@ func WithAuthConfig(authConfig *AuthConfig) Option {
 	}
 }
 
+//nolint:nestif // quite complex logic
 func (tm *TokenManager) Login() error {
 	if tm.cfg.authConfig.AuthFile != "" {
 		log.Debug("auth file path provided, trying to load auth info from file",
@@ -84,14 +85,23 @@ func (tm *TokenManager) Login() error {
 		fmt.Printf("%s\n", exp.String())
 		if exp.After(time.Now()) {
 			log.Debug("refresh token is valid, refreshing access token...")
-			tm.doRefresh()
+			if refreshErr := tm.doRefresh(); refreshErr != nil {
+				log.Debug("failed to refresh access token, will try to login with credentials",
+					log.ErrorField(refreshErr))
+				return tm.doLogin()
+			}
+			log.Info("successfully refreshed access token")
 			tm.setupTokenRefresh()
 			return nil
 		}
 		// do nothing, will try to login with credentials
 		log.Debug("refresh token is expired, will try to login with credentials")
 	}
-	return tm.doLogin()
+	if loginErr := tm.doLogin(); loginErr != nil {
+		return loginErr
+	}
+	tm.setupTokenRefresh()
+	return nil
 }
 
 func (tm *TokenManager) GetAccessToken() (string, error) {

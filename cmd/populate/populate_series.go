@@ -3,7 +3,6 @@ package populate
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -35,6 +34,7 @@ func NewPopulateSeriesCommand() *cobra.Command {
 	return &cmd
 }
 
+//nolint:funlen // showcase
 func populateSeries() {
 	app, err := util.InitApp()
 	if err != nil {
@@ -45,6 +45,7 @@ func populateSeries() {
 	if len(quarter) == 0 {
 		quarter = []int{1, 2, 3, 4}
 	}
+	results := make([]ResultData, 0)
 	for _, y := range year {
 		for _, q := range quarter {
 			var data []byte
@@ -61,7 +62,7 @@ func populateSeries() {
 				log.Int("quarter", q),
 				log.Int("data-size",
 					len(data)))
-			os.WriteFile(fmt.Sprintf("tmp/season-%d-%d.json", y, q), data, 0o644)
+			writeToFile(fmt.Sprintf("tmp/season-%d-%d.json", y, q), data)
 			var seasons irdata.SeasonList
 			if err = json.Unmarshal(data, &seasons); err != nil {
 				log.Error("failed to unmarshal season data", log.ErrorField(err))
@@ -82,11 +83,38 @@ func populateSeries() {
 					log.Error("failed to get season schedule data", log.ErrorField(err))
 					continue
 				}
-				os.WriteFile(fmt.Sprintf("tmp/schedule-%d-%d-%d.json", y, q, s.SeasonID), data, 0o644)
-
+				writeToFile(
+					fmt.Sprintf("tmp/schedule-%d-%d-%d.json", y, q, s.SeasonID),
+					data,
+				)
+				var schedule irdata.ScheduleResponse
+				if err = json.Unmarshal(data, &schedule); err != nil {
+					log.Error("failed to unmarshal season schedule data",
+						log.ErrorField(err))
+					continue
+				}
+				for i := range schedule.Schedules {
+					r := schedule.Schedules[i]
+					if !r.QualAttached {
+						results = append(results, ResultData{
+							SeasonID:      s.SeasonID,
+							SeasonYear:    s.SeasonYear,
+							SeasonQuarter: s.SeasonQuarter,
+							SeasonName:    s.SeasonName,
+							RaceWeekNum:   r.RaceWeekNum,
+						})
+					}
+				}
 			}
 			log.Info("season data", log.Int("season_count", len(seasons.Seasons)))
-
 		}
+	}
+	if len(results) > 0 {
+		data, err := json.MarshalIndent(results, "", "  ")
+		if err != nil {
+			log.Error("failed to marshal final results", log.ErrorField(err))
+			return
+		}
+		writeToFile("tmp/00-detached-quali.json", data)
 	}
 }

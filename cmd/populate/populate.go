@@ -12,5 +12,6 @@ func NewPopulateCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewPopulateSeriesCommand())
+	cmd.AddCommand(NewPopulateResultsCommand())
 	return &cmd
 }

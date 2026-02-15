@@ -91,6 +91,7 @@ func WithCache(arg cache.Cache) Option {
 	}
 }
 
+//nolint:funlen // much to do here
 func (i *IrData) Get(uri string) ([]byte, error) {
 	if b, ok := i.cfg.cache.Get(uri); ok {
 		return b, nil
@@ -145,13 +146,16 @@ func (i *IrData) Get(uri string) ([]byte, error) {
 		}
 		defer s3Resp.Body.Close()
 		if s3Resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("unexpected status code from s3 link: %d", s3Resp.StatusCode)
+			return nil, fmt.Errorf("unexpected status code from s3 link: %d",
+				s3Resp.StatusCode)
 		}
 		body, err = io.ReadAll(s3Resp.Body)
 		if err != nil {
 			return nil, err
 		}
 	}
-	i.cfg.cache.Set(uri, body)
+	if cacheErr := i.cfg.cache.Set(uri, body); cacheErr != nil {
+		log.Warn("failed to set cache", log.ErrorField(cacheErr))
+	}
 	return body, nil
 }
