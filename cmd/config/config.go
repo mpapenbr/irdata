@@ -1,12 +1,6 @@
 package config
 
-type IrAuth struct {
-	ClientID     string
-	ClientSecret string
-	Username     string
-	Password     string
-	AuthFile     string
-}
+import "github.com/mpapenbr/irdata/auth"
 
 var (
 	EnableTelemetry   bool
@@ -14,5 +8,5 @@ var (
 	LogConfig         string
 	LogLevel          string
 	OtelOutput        string // output for otel-logger (stdout, grpc)
-	IrAuthConfig      IrAuth
+	IrAuthConfig      auth.AuthConfig
 )

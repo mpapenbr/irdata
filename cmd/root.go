@@ -120,18 +120,7 @@ func init() {
 		true,
 		"if true, don't log fields that contain a context.Context")
 
-	rootCmd.Flags().StringVar(&config.IrAuthConfig.ClientID,
-		"client-id", "", "iRacing API client ID")
-	rootCmd.Flags().StringVar(&config.IrAuthConfig.ClientSecret,
-		"client-secret", "", "iRacing API client secret")
-	rootCmd.Flags().StringVar(&config.IrAuthConfig.Username,
-		"username", "", "iRacing username")
-	rootCmd.Flags().StringVar(&config.IrAuthConfig.Password,
-		"password", "", "iRacing password")
-	rootCmd.Flags().StringVar(&config.IrAuthConfig.AuthFile,
-		"auth-file", "", "temp. auth file")
-
-	rootCmd.AddCommand(auth.NewLoginCommand())
+	rootCmd.AddCommand(auth.NewAuthCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())
 }

@@ -21,3 +21,4 @@ dist/**
 .gitconfig.local*
 .npmrc
 .irdata.yml
+.auth.json

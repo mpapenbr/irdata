@@ -3,23 +3,25 @@ package auth
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/mpapenbr/irdata/log"
+	"github.com/mpapenbr/irdata/cmd/config"
 )
 
-//nolint:errcheck,lll // by design
-func NewLoginCommand() *cobra.Command {
+func NewAuthCommand() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "login",
-		Short: "login to iRacing and save auth info to a file",
+		Use:   "auth",
+		Short: "commands related to authentication",
 		Long:  ``,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			doLogin()
-			return nil
-		},
 	}
+	cmd.PersistentFlags().StringVar(&config.IrAuthConfig.ClientID,
+		"client-id", "", "iRacing API client ID")
+	cmd.PersistentFlags().StringVar(&config.IrAuthConfig.ClientSecret,
+		"client-secret", "", "iRacing API client secret")
+	cmd.PersistentFlags().StringVar(&config.IrAuthConfig.Username,
+		"username", "", "iRacing username")
+	cmd.PersistentFlags().StringVar(&config.IrAuthConfig.Password,
+		"password", "", "iRacing password")
+	cmd.PersistentFlags().StringVar(&config.IrAuthConfig.AuthFile,
+		"auth-file", "", "temp. auth file")
+	cmd.AddCommand(NewLoginCommand())
 	return &cmd
-}
-
-func doLogin() {
-	log.Debug("Logging in to iRacing...")
 }
