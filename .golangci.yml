@@ -231,7 +231,8 @@ formatters:
       module-path: "github.com/mpapenbr/irdata"
       extra-rules: true
     goimports:
-      local-prefixes: "github.com/mpapenbr/irdata"
+      local-prefixes:
+        - "github.com/mpapenbr/irdata"
   exclusions:
     generated: lax
     paths:
