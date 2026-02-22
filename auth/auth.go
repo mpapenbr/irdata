@@ -24,12 +24,15 @@ type (
 		RefreshToken          string `json:"refresh_token"`
 		RefreshTokenExpiresIn int    `json:"refresh_token_expires_in"`
 	}
+	//nolint:lll // readability
 	AuthConfig struct {
-		ClientID     string
-		ClientSecret string
-		Username     string
-		Password     string
-		AuthFile     string
+		ClientID           string
+		ClientSecret       string
+		Username           string
+		Password           string
+		AuthFile           string
+		RefreshGuard       time.Duration // duration before token expiration to attempt refresh
+		TokenCheckInterval time.Duration // interval to check token expiration, default 1 minute
 	}
 
 	Option             func(*tokenManagerConfig)
@@ -40,6 +43,7 @@ type (
 		cfg   tokenManagerConfig
 		ctx   context.Context
 		token *tokenData
+		log   *log.Logger
 	}
 )
 
@@ -53,7 +57,11 @@ func NewTokenManager(opts ...Option) (*TokenManager, error) {
 	for _, opt := range opts {
 		opt(&tm)
 	}
-	return &TokenManager{cfg: tm, ctx: context.Background()}, nil
+	return &TokenManager{
+		cfg: tm,
+		ctx: context.Background(),
+		log: log.Default().Named("auth"),
+	}, nil
 }
 
 func WithAuthConfig(authConfig *AuthConfig) Option {
@@ -65,37 +73,37 @@ func WithAuthConfig(authConfig *AuthConfig) Option {
 //nolint:nestif // quite complex logic
 func (tm *TokenManager) Login() error {
 	if tm.cfg.authConfig.AuthFile != "" {
-		log.Debug("auth file path provided, trying to load auth info from file",
+		tm.log.Debug("auth file path provided, trying to load auth info from file",
 			log.String("auth-file", tm.cfg.authConfig.AuthFile))
 		if err := tm.loadAuthInfo(); err != nil {
-			log.Debug("failed to load auth info from file, will try to login",
+			tm.log.Debug("failed to load auth info from file, will try to login",
 				log.ErrorField(err))
 			return tm.doLogin()
 		}
-		log.Info("successfully loaded auth info from file")
+		tm.log.Info("successfully loaded auth info from file")
 		exp := tm.getExpiresIn(tm.token.AccessToken)
 		if exp.After(time.Now()) {
-			log.Debug("token is valid")
+			tm.log.Debug("token is valid")
 			tm.setupTokenRefresh()
 			return nil
 		}
-		log.Debug("token is expired, refreshing...")
+		tm.log.Debug("token is expired, refreshing...")
 
 		exp = tm.getExpiresIn(tm.token.RefreshToken)
 		fmt.Printf("%s\n", exp.String())
 		if exp.After(time.Now()) {
-			log.Debug("refresh token is valid, refreshing access token...")
+			tm.log.Debug("refresh token is valid, refreshing access token...")
 			if refreshErr := tm.doRefresh(); refreshErr != nil {
-				log.Debug("failed to refresh access token, will try to login with credentials",
+				tm.log.Debug("failed to refresh access token, will try to login with credentials",
 					log.ErrorField(refreshErr))
 				return tm.doLogin()
 			}
-			log.Info("successfully refreshed access token")
+			tm.log.Info("successfully refreshed access token")
 			tm.setupTokenRefresh()
 			return nil
 		}
 		// do nothing, will try to login with credentials
-		log.Debug("refresh token is expired, will try to login with credentials")
+		tm.log.Debug("refresh token is expired, will try to login with credentials")
 	}
 	if loginErr := tm.doLogin(); loginErr != nil {
 		return loginErr
@@ -126,12 +134,12 @@ func (tm *TokenManager) getExpiresIn(token string) time.Time {
 
 	var claims map[string]interface{}
 	if err := json.Unmarshal(payload, &claims); err != nil {
-		log.Debug("failed to unmarshal token claims", log.ErrorField(err))
+		tm.log.Debug("failed to unmarshal token claims", log.ErrorField(err))
 		return time.Time{}
 	}
 
 	if exp, ok := claims["exp"].(float64); ok {
-		log.Debug("token expiration", log.Any("exp_time", time.Unix(int64(exp), 0)))
+		tm.log.Debug("token expiration", log.Any("exp_time", time.Unix(int64(exp), 0)))
 		return time.Unix(int64(exp), 0)
 	}
 	return time.Time{}
@@ -140,23 +148,31 @@ func (tm *TokenManager) getExpiresIn(token string) time.Time {
 func (tm *TokenManager) setupTokenRefresh() {
 	go func() {
 		for {
-			if tm.token == nil {
-				time.Sleep(time.Second)
-				continue
-			}
+			select {
+			case <-tm.ctx.Done():
+				tm.log.Debug("stopping token refresh goroutine")
+				return
+			case <-time.After(tm.cfg.authConfig.TokenCheckInterval):
+				tm.log.Debug("checking token expiration for refresh")
 
-			exp := tm.getExpiresIn(tm.token.AccessToken)
-			waitUntil := exp.Add(-10 * time.Second)
-			duration := time.Until(waitUntil)
+				if tm.token == nil {
+					time.Sleep(time.Second)
+					continue
+				}
 
-			if duration > 0 {
-				log.Debug("waiting until token refresh",
-					log.Duration("refresh_in", duration))
-				time.Sleep(duration)
-			}
-			log.Debug("refreshing token...")
-			if err := tm.doRefresh(); err != nil {
-				log.Debug("token refresh failed", log.ErrorField(err))
+				exp := tm.getExpiresIn(tm.token.AccessToken)
+				pre := tm.cfg.authConfig.RefreshGuard
+				if pre <= 0 {
+					pre = 1 * time.Minute
+				}
+				if time.Until(exp) <= pre {
+					tm.log.Debug("token is close to expiration, refreshing...",
+						log.Time("exp", exp),
+					)
+					if err := tm.doRefresh(); err != nil {
+						tm.log.Debug("token refresh failed", log.ErrorField(err))
+					}
+				}
 			}
 		}
 	}()
@@ -197,7 +213,7 @@ func (tm *TokenManager) doLogin() error {
 	tm.token = &token
 
 	if tm.cfg.authConfig.AuthFile != "" {
-		log.Debug("saving auth info to file",
+		tm.log.Debug("saving auth info to file",
 			log.String("auth-file", tm.cfg.authConfig.AuthFile))
 		if err := tm.saveAuthInfo(); err != nil {
 			return err
@@ -238,6 +254,8 @@ func (tm *TokenManager) doRefresh() error {
 	tm.token = &token
 
 	if tm.cfg.authConfig.AuthFile != "" {
+		tm.log.Debug("saving auth info to file",
+			log.String("auth-file", tm.cfg.authConfig.AuthFile))
 		if err := tm.saveAuthInfo(); err != nil {
 			return err
 		}

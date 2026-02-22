@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"github.com/mpapenbr/irdata/cmd/auth"
+	"github.com/mpapenbr/irdata/cmd/check"
 	"github.com/mpapenbr/irdata/cmd/config"
 	"github.com/mpapenbr/irdata/cmd/populate"
 	"github.com/mpapenbr/irdata/log"
@@ -134,9 +136,15 @@ func init() {
 		"password", "", "iRacing password")
 	rootCmd.PersistentFlags().StringVar(&config.IrAuthConfig.AuthFile,
 		"auth-file", "", "temp. auth file")
+	rootCmd.PersistentFlags().DurationVar(&config.IrAuthConfig.TokenCheckInterval,
+		"token-check-interval", 15*time.Second, "interval to check token expiration")
+	rootCmd.PersistentFlags().DurationVar(&config.IrAuthConfig.RefreshGuard,
+		"refresh-guard", 1*time.Minute, "duration before token expiration to attempt refresh")
+
 	rootCmd.AddCommand(auth.NewAuthCommand())
 
 	rootCmd.AddCommand(populate.NewPopulateCommand())
+	rootCmd.AddCommand(check.NewCheckCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())
 }
