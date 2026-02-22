@@ -15,3 +15,5 @@ zap:
     durationEncoder: "string"
 loggers:
   ir-s3: info
+  irapi: info
+  auth: info
