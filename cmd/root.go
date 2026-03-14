@@ -19,6 +19,7 @@ import (
 	"github.com/mpapenbr/irdata/cmd/check"
 	"github.com/mpapenbr/irdata/cmd/config"
 	"github.com/mpapenbr/irdata/cmd/populate"
+	"github.com/mpapenbr/irdata/cmd/racelogger"
 	"github.com/mpapenbr/irdata/log"
 	"github.com/mpapenbr/irdata/otel"
 	"github.com/mpapenbr/irdata/version"
@@ -145,6 +146,7 @@ func init() {
 
 	rootCmd.AddCommand(populate.NewPopulateCommand())
 	rootCmd.AddCommand(check.NewCheckCommand())
+	rootCmd.AddCommand(racelogger.NewRaceloggerCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())
 }
