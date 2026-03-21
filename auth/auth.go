@@ -271,6 +271,7 @@ func (tm *TokenManager) hashSecret(secret, id string) string {
 }
 
 func (tm *TokenManager) saveAuthInfo() error {
+	//nolint:gosec // need secret pattern here
 	data, err := json.Marshal(tm.token)
 	if err != nil {
 		return err
