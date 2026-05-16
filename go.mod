@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	go.uber.org/zap v1.28.0
 	gonum.org/v1/plot v0.17.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 	gopkg.in/yaml.v3 v3.0.1
 	moul.io/zapfilter v1.7.0
 )
