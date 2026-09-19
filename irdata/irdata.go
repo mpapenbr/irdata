@@ -42,6 +42,20 @@ type (
 		Link    string    `json:"link"`
 		Expires time.Time `json:"expires"`
 	}
+	//nolint:tagliatelle // external definition
+	chunkInfo struct {
+		ChunkSize       int      `json:"chunk_size"`
+		NumChunks       int      `json:"num_chunks"`
+		Rows            int      `json:"rows"`
+		BaseDownloadURL string   `json:"base_download_url"`
+		ChunkFileNames  []string `json:"chunk_file_names"`
+	}
+
+	// construct to provide resolved chunk data to caller
+	//nolint:tagliatelle // by design.
+	ChunkData[E any] struct {
+		Data []E `json:"_chunk_data"`
+	}
 )
 
 const baseURL = "https://members-ng.iracing.com/data"
@@ -139,6 +153,7 @@ func (i *IrData) Get(uri string) ([]byte, error) {
 		return nil, err
 	}
 	var s3link s3Link
+	//nolint:nestif // by design
 	if err := json.Unmarshal(body, &s3link); err == nil {
 		s3Resp, err := i.s3Client.Get(s3link.Link)
 		if err != nil {
@@ -153,9 +168,78 @@ func (i *IrData) Get(uri string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		body, err = i.resolveChunks(body)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if cacheErr := i.cfg.cache.Set(uri, body); cacheErr != nil {
 		log.Warn("failed to set cache", log.ErrorField(cacheErr))
 	}
 	return body, nil
+}
+
+func (i *IrData) resolveChunks(body []byte) ([]byte, error) {
+	var ci chunkInfo
+	var raw map[string]interface{}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return body, err
+	}
+
+	if raw["chunk_info"] == nil {
+		return body, nil
+	}
+	if ciStr, err := json.Marshal(raw["chunk_info"]); err == nil {
+		if err := json.Unmarshal(ciStr, &ci); err != nil {
+			return body, err
+		}
+	} else {
+		return body, nil
+	}
+	if len(ci.ChunkFileNames) == 0 {
+		return body, nil
+	}
+
+	var results []any
+	for _, chunk := range ci.ChunkFileNames {
+		chunkBody, err := i.readChunk(fmt.Sprintf("%s%s", ci.BaseDownloadURL, chunk))
+		if err != nil {
+			return nil, err
+		}
+		var chunkResult []any
+		if err := json.Unmarshal(chunkBody, &chunkResult); err == nil {
+			results = append(results, chunkResult...)
+		} else {
+			log.Warn("failed to unmarshal chunk", log.ErrorField(err))
+		}
+	}
+	if len(results) == 0 {
+		return body, nil
+	}
+
+	raw["_chunk_data"] = results
+	combined, err := json.Marshal(raw)
+	if err != nil {
+		return nil, err
+	}
+	return combined, nil
+}
+
+func (i *IrData) readChunk(uri string) ([]byte, error) {
+	s3Resp, err := i.s3Client.Get(uri)
+	if err != nil {
+		return nil, err
+	}
+	defer s3Resp.Body.Close()
+	if s3Resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"unexpected status code from s3 chunk link: %d",
+			s3Resp.StatusCode,
+		)
+	}
+	chunkBody, err := io.ReadAll(s3Resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return chunkBody, nil
 }

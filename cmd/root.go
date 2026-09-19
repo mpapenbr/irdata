@@ -18,6 +18,7 @@ import (
 	"github.com/mpapenbr/irdata/cmd/auth"
 	"github.com/mpapenbr/irdata/cmd/check"
 	"github.com/mpapenbr/irdata/cmd/config"
+	"github.com/mpapenbr/irdata/cmd/laps"
 	"github.com/mpapenbr/irdata/cmd/populate"
 	"github.com/mpapenbr/irdata/cmd/racelogger"
 	"github.com/mpapenbr/irdata/cmd/splits"
@@ -149,6 +150,7 @@ func init() {
 	rootCmd.AddCommand(check.NewCheckCommand())
 	rootCmd.AddCommand(racelogger.NewRaceloggerCommand())
 	rootCmd.AddCommand(splits.NewSplitsCommand())
+	rootCmd.AddCommand(laps.NewLapsCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())
 }

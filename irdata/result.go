@@ -33,9 +33,11 @@ type (
 		SOF          float64 `json:"event_strength_of_field,omitempty"`
 	}
 	EventSessionResult struct {
-		Results        []EventSessionResultEntry `json:"results,omitempty"`
-		SimSessionName string                    `json:"simsession_name,omitempty"`
-		SimSessionType int                       `json:"simsession_type,omitempty"`
+		Results            []EventSessionResultEntry `json:"results,omitempty"`
+		SimSessionName     string                    `json:"simsession_name,omitempty"`
+		SimSessionType     int                       `json:"simsession_type,omitempty"`
+		SimSessionTypeName string                    `json:"simsession_type_name,omitempty"`
+		SimSessionNumber   int                       `json:"simsession_number,omitempty"`
 	}
 	EventSessionResultEntry struct {
 		CustID            int                             `json:"cust_id,omitempty"`
@@ -64,5 +66,23 @@ type (
 	}
 	EventSessionResultEntryLivery struct {
 		CarNumber string `json:"car_number,omitempty"`
+	}
+	LapData struct {
+		AI          bool     `json:"ai,omitempty"`
+		CarNumber   string   `json:"car_number,omitempty"`
+		CustID      int      `json:"cust_id,omitempty"`
+		DisplayName string   `json:"display_name,omitempty"`
+		Flags       int      `json:"flags,omitempty"`
+		GroupID     int      `json:"group_id,omitempty"`
+		Incident    bool     `json:"incident,omitempty"`
+		LapEvents   []string `json:"lap_events,omitempty"`
+
+		LapNumber       int    `json:"lap_number,omitempty"`
+		LapTime         int    `json:"lap_time,omitempty"`
+		LicenseLevel    int    `json:"license_level,omitempty"`
+		Name            string `json:"name,omitempty"`
+		PersonalBestLap bool   `json:"personal_best_lap,omitempty"`
+		SessionTime     int    `json:"session_time,omitempty"`
+		TeamFastestLap  bool   `json:"team_fastest_lap,omitempty"`
 	}
 )

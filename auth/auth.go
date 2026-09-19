@@ -89,21 +89,18 @@ func (tm *TokenManager) Login() error {
 		}
 		tm.log.Debug("token is expired, refreshing...")
 
-		exp = tm.getExpiresIn(tm.token.RefreshToken)
-		fmt.Printf("%s\n", exp.String())
-		if exp.After(time.Now()) {
-			tm.log.Debug("refresh token is valid, refreshing access token...")
-			if refreshErr := tm.doRefresh(); refreshErr != nil {
-				tm.log.Debug("failed to refresh access token, will try to login with credentials",
-					log.ErrorField(refreshErr))
-				return tm.doLogin()
+		if refreshErr := tm.doRefresh(); refreshErr != nil {
+			tm.log.Debug("failed to refresh access token, will try to login with credentials",
+				log.ErrorField(refreshErr))
+			if loginErr := tm.doLogin(); loginErr != nil {
+				return loginErr
 			}
-			tm.log.Info("successfully refreshed access token")
 			tm.setupTokenRefresh()
 			return nil
 		}
-		// do nothing, will try to login with credentials
-		tm.log.Debug("refresh token is expired, will try to login with credentials")
+		tm.log.Info("successfully refreshed access token")
+		tm.setupTokenRefresh()
+		return nil
 	}
 	if loginErr := tm.doLogin(); loginErr != nil {
 		return loginErr
