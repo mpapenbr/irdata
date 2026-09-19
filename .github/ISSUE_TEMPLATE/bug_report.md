@@ -37,7 +37,7 @@ $ go env
 <!-- Output of `go env` goes here -->
 </pre></details>
 
-### Does this issue exist with Go `v1.26`?
+### Does this issue exist with Go `v1.27`?
 
 <!-- Yes/No -->
 

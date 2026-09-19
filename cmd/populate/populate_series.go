@@ -52,7 +52,8 @@ func populateSeries() {
 			var err error
 			data, err = app.API.Get(
 				fmt.Sprintf("/data/series/season_list?season_year=%d&season_quarter=%d",
-					y, q))
+					y, q),
+			)
 			if err != nil {
 				log.Error("failed to get current season data", log.ErrorField(err))
 				continue
@@ -78,7 +79,8 @@ func populateSeries() {
 					log.Int("season_quarter", s.SeasonQuarter),
 				)
 				data, err = app.API.Get(
-					fmt.Sprintf("/data/series/season_schedule?season_id=%d", s.SeasonID))
+					fmt.Sprintf("/data/series/season_schedule?season_id=%d", s.SeasonID),
+				)
 				if err != nil {
 					log.Error("failed to get season schedule data", log.ErrorField(err))
 					continue

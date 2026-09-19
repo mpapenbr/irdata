@@ -122,7 +122,8 @@ func (c *collectLapDataCommand) run(ctx context.Context) error {
 			for j := range sResults.Results {
 				resultEntry := sResults.Results[j]
 				if incs, cErr := c.collectLapData(
-					sResults.SimSessionNumber, &resultEntry); cErr != nil {
+					sResults.SimSessionNumber, &resultEntry,
+				); cErr != nil {
 					log.Error("failed to collect lap data", log.ErrorField(cErr))
 				} else {
 					// handle collected incidents if needed
@@ -151,7 +152,8 @@ func (c *collectLapDataCommand) collectLapData(
 	data, err := c.app.API.Get(
 		strings.TrimSpace(fmt.Sprintf(`
 			/data/results/lap_data?subsession_id=%d&simsession_number=%d&cust_id=%d
-			`, c.subsessionID, sessionNumber, resultEntry.CustID)))
+			`, c.subsessionID, sessionNumber, resultEntry.CustID)),
+	)
 	if err != nil {
 		log.Error("failed to get lap data", log.ErrorField(err))
 		return nil, err
@@ -186,7 +188,8 @@ func (c *collectLapDataCommand) getEventResult() (
 	data, err := c.app.API.Get(
 		strings.TrimSpace(fmt.Sprintf(`
 			/data/results/get?subsession_id=%d
-			`, c.subsessionID)))
+			`, c.subsessionID)),
+	)
 	if err != nil {
 		log.Error("failed to get event result data", log.ErrorField(err))
 		return nil, err

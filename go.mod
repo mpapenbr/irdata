@@ -1,6 +1,6 @@
 module github.com/mpapenbr/irdata
 
-go 1.26
+go 1.27
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.1

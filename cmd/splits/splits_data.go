@@ -1,4 +1,4 @@
-//nolint:funlen,lll // tmp file
+//nolint:funlen,lll,goconst // tmp file
 package splits
 
 import (
@@ -119,7 +119,8 @@ func (c *collectSplitsDataCommand) run(ctx context.Context) error {
 	data, err := app.API.Get(
 		strings.TrimSpace(fmt.Sprintf(`
 			/data/results/get?subsession_id=%d
-			`, c.subsessionID)))
+			`, c.subsessionID)),
+	)
 	if err != nil {
 		log.Error("failed to get event result data", log.ErrorField(err))
 		return err
@@ -139,7 +140,8 @@ func (c *collectSplitsDataCommand) run(ctx context.Context) error {
 		data, err := app.API.Get(
 			strings.TrimSpace(fmt.Sprintf(`
 			/data/results/get?subsession_id=%d
-			`, otherSubsessionID)))
+			`, otherSubsessionID)),
+		)
 		if err != nil {
 			log.Error("failed to get event result data", log.ErrorField(err))
 			return err
@@ -209,7 +211,8 @@ func (c *collectSplitsDataCommand) outputSummary(split int) {
 		return d.driverRatings
 	})
 	driverStats := c.collectMinMaxAvg(dRatings)
-	fmt.Printf("split:%2d #teams:%2d #driver: %2d team: (%s) driver: (%s)\n",
+	fmt.Printf(
+		"split:%2d #teams:%2d #driver: %2d team: (%s) driver: (%s)\n",
 		split, s.numTeams, s.numDrivers, s.ratings.ratingStats(),
 		driverStats.ratingStats(),
 	)
@@ -429,7 +432,8 @@ func (c *collectSplitsDataCommand) processSplits(all []*teamData) {
 				return true
 			}), func(d *teamData) int {
 				return d.carClassID
-			})
+			},
+		)
 
 		for carClassID, td := range byCarClassID {
 			byCar := lo.GroupBy(lo.Filter(td, func(d *teamData, _ int) bool {
@@ -492,7 +496,8 @@ func (c *collectSplitsDataCommand) processEventResult(
 	split int,
 	er *irdata.EventResult,
 ) []*teamData {
-	log.Debug("processing event result",
+	log.Debug(
+		"processing event result",
 
 		log.Int("subsession_id", er.SubsessionID),
 	)

@@ -87,7 +87,8 @@ func (c *collectResults) process(results []ResultData) {
 		data, err = c.app.API.Get(
 			strings.TrimSpace(fmt.Sprintf(`
 			/data/results/season_results?season_id=%d&race_week_num=%d&event_type=5
-			`, r.SeasonID, r.RaceWeekNum)))
+			`, r.SeasonID, r.RaceWeekNum)),
+		)
 		if err != nil {
 			log.Error("failed to get current season data", log.ErrorField(err))
 			continue
@@ -137,7 +138,8 @@ func (c *collectResults) collectRaceResults(
 		data, err := c.app.API.Get(
 			strings.TrimSpace(fmt.Sprintf(`
 			/data/results/get?subsession_id=%d
-			`, r.SubsessionID)))
+			`, r.SubsessionID)),
+		)
 		if err != nil {
 			log.Error("failed to get event result data", log.ErrorField(err))
 			continue

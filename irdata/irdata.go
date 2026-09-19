@@ -123,7 +123,8 @@ func (i *IrData) Get(uri string) ([]byte, error) {
 
 	req, err := retryablehttp.NewRequestWithContext(
 		i.cfg.ctx,
-		http.MethodGet, reqURL.String(), http.NoBody)
+		http.MethodGet, reqURL.String(), http.NoBody,
+	)
 	if err != nil {
 		return nil, err
 	}

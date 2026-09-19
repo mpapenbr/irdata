@@ -191,7 +191,8 @@ func (tm *TokenManager) doLogin() error {
 		tm.ctx,
 		http.MethodPost,
 		tokenURL,
-		strings.NewReader(data.Encode()))
+		strings.NewReader(data.Encode()),
+	)
 	if err != nil {
 		return err
 	}
@@ -232,7 +233,8 @@ func (tm *TokenManager) doRefresh() error {
 		tm.ctx,
 		http.MethodPost,
 		tokenURL,
-		strings.NewReader(data.Encode()))
+		strings.NewReader(data.Encode()),
+	)
 	if err != nil {
 		return err
 	}
