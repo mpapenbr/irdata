@@ -7,13 +7,16 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
+	"github.com/mpapenbr/irdata/cmd/config"
 	"github.com/mpapenbr/irdata/cmd/util"
 	"github.com/mpapenbr/irdata/irdata"
 	"github.com/mpapenbr/irdata/log"
+	gUtil "github.com/mpapenbr/irdata/util"
 )
 
 func NewLapEventsCommand() *cobra.Command {
@@ -60,10 +63,10 @@ type (
 		Events    []string
 	}
 	sessionIncidents struct {
-		CustID      int
-		CustName    string
-		SessionName string
-		Incidents   []*incidentData
+		CustID   int
+		CustName string
+
+		Incidents []*incidentData
 	}
 	siTry []*sessionIncidents
 )
@@ -118,24 +121,9 @@ func (c *collectLapDataCommand) run(ctx context.Context) error {
 	for i := range eventResult.SessionResults {
 		sResults := eventResult.SessionResults[i]
 		if sResults.SimSessionTypeName == "Race" {
-			incidents := siTry{}
-			for j := range sResults.Results {
-				resultEntry := sResults.Results[j]
-				if incs, cErr := c.collectLapData(
-					sResults.SimSessionNumber, &resultEntry,
-				); cErr != nil {
-					log.Error("failed to collect lap data", log.ErrorField(cErr))
-				} else {
-					// handle collected incidents if needed
-					incidents = append(incidents, &sessionIncidents{
-						CustID:      resultEntry.CustID,
-						CustName:    resultEntry.DisplayName,
-						SessionName: sResults.SimSessionName,
-						Incidents:   incs,
-					})
-				}
-			}
-			// handle session incidents if needed
+			incidents := c.incCollector(
+				sResults.SimSessionNumber, sResults.Results,
+			)
 
 			fmt.Fprintf(os.Stdout, "Session %s\n", sResults.SimSessionName)
 			incidents.Output(os.Stdout)
@@ -143,6 +131,39 @@ func (c *collectLapDataCommand) run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+//nolint:whitespace // editor/linter issue
+func (c *collectLapDataCommand) incCollector(
+	sessionNumber int, resultEntries []irdata.EventSessionResultEntry,
+) siTry {
+	result := siTry{}
+	mu := sync.Mutex{}
+
+	worker := gUtil.NewWorker[irdata.EventSessionResultEntry, sessionIncidents](
+		func(entry irdata.EventSessionResultEntry) (sessionIncidents, error) {
+			incs, err := c.collectLapData(sessionNumber, &entry)
+			if err != nil {
+				log.Error("failed to collect lap data", log.ErrorField(err))
+				return sessionIncidents{}, err
+			}
+			return sessionIncidents{
+				CustID:    entry.CustID,
+				CustName:  entry.DisplayName,
+				Incidents: incs,
+			}, nil
+		}, gUtil.WithResultCallback(func(idx int, si sessionIncidents, err error) {
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			result = append(result, &si)
+			mu.Unlock()
+		}),
+		gUtil.WithNumWorker[sessionIncidents](config.NumWorkers),
+	)
+	worker.Process(resultEntries)
+	return result
 }
 
 //nolint:whitespace // editor/linter issue

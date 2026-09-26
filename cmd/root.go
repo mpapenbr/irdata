@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/mpapenbr/irdata/cmd/auth"
+	"github.com/mpapenbr/irdata/cmd/badger"
 	"github.com/mpapenbr/irdata/cmd/check"
 	"github.com/mpapenbr/irdata/cmd/config"
 	"github.com/mpapenbr/irdata/cmd/laps"
@@ -143,6 +144,8 @@ func init() {
 		"token-check-interval", 15*time.Second, "interval to check token expiration")
 	rootCmd.PersistentFlags().DurationVar(&config.IrAuthConfig.RefreshGuard,
 		"refresh-guard", 1*time.Minute, "duration before token expiration to attempt refresh")
+	rootCmd.PersistentFlags().IntVar(&config.NumWorkers,
+		"num-workers", 1, "number of workers for concurrent processing	")
 
 	rootCmd.AddCommand(auth.NewAuthCommand())
 
@@ -151,6 +154,7 @@ func init() {
 	rootCmd.AddCommand(racelogger.NewRaceloggerCommand())
 	rootCmd.AddCommand(splits.NewSplitsCommand())
 	rootCmd.AddCommand(laps.NewLapsCommand())
+	rootCmd.AddCommand(badger.NewBadgerCommand())
 	// add commands here
 	// e.g. rootCmd.AddCommand(sampleCmd.NewSampleCmd())
 }
