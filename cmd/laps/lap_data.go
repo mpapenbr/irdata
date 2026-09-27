@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -63,8 +64,8 @@ type (
 		Events    []string
 	}
 	sessionIncidents struct {
-		CustID   int
-		CustName string
+		RefID int
+		Name  string
 
 		Incidents []*incidentData
 	}
@@ -73,7 +74,7 @@ type (
 
 func (si siTry) Output(out io.Writer) {
 	tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "CustID\tName\tOfftracks\tContacts\tCar Contacts\tLost Control")
+	fmt.Fprintln(tw, "RefID\tName\tOfftracks\tContacts\tCar Contacts\tLost Control")
 	for _, entry := range si {
 		offtracks := 0
 		contacts := 0
@@ -96,7 +97,7 @@ func (si siTry) Output(out io.Writer) {
 			}
 		}
 		fmt.Fprintf(tw, "%d\t%s\t%d\t%d\t%d\t%d\n",
-			entry.CustID, entry.CustName, offtracks, contacts, carContacts, lostControl)
+			entry.RefID, entry.Name, offtracks, contacts, carContacts, lostControl)
 	}
 	tw.Flush()
 }
@@ -121,8 +122,11 @@ func (c *collectLapDataCommand) run(ctx context.Context) error {
 	for i := range eventResult.SessionResults {
 		sResults := eventResult.SessionResults[i]
 		if sResults.SimSessionTypeName == "Race" {
+
 			incidents := c.incCollector(
-				sResults.SimSessionNumber, sResults.Results,
+				eventResult.MaxTeamDrivers > 1,
+				sResults.SimSessionNumber,
+				sResults.Results,
 			)
 
 			fmt.Fprintf(os.Stdout, "Session %s\n", sResults.SimSessionName)
@@ -135,21 +139,27 @@ func (c *collectLapDataCommand) run(ctx context.Context) error {
 
 //nolint:whitespace // editor/linter issue
 func (c *collectLapDataCommand) incCollector(
-	sessionNumber int, resultEntries []irdata.EventSessionResultEntry,
+	isTeamRace bool,
+	sessionNumber int,
+	resultEntries []irdata.EventSessionResultEntry,
 ) siTry {
 	result := siTry{}
 	mu := sync.Mutex{}
 
 	worker := gUtil.NewWorker[irdata.EventSessionResultEntry, sessionIncidents](
 		func(entry irdata.EventSessionResultEntry) (sessionIncidents, error) {
-			incs, err := c.collectLapData(sessionNumber, &entry)
+			incs, err := c.collectLapData(isTeamRace, sessionNumber, &entry)
 			if err != nil {
 				log.Error("failed to collect lap data", log.ErrorField(err))
 				return sessionIncidents{}, err
 			}
+			id := entry.CustID
+			if isTeamRace {
+				id = entry.TeamID
+			}
 			return sessionIncidents{
-				CustID:    entry.CustID,
-				CustName:  entry.DisplayName,
+				RefID:     id,
+				Name:      entry.DisplayName,
 				Incidents: incs,
 			}, nil
 		}, gUtil.WithResultCallback(func(idx int, si sessionIncidents, err error) {
@@ -168,12 +178,20 @@ func (c *collectLapDataCommand) incCollector(
 
 //nolint:whitespace // editor/linter issue
 func (c *collectLapDataCommand) collectLapData(
+	isTeamRace bool,
 	sessionNumber int, resultEntry *irdata.EventSessionResultEntry,
 ) ([]*incidentData, error) {
+	v := url.Values{}
+	v.Set("subsession_id", fmt.Sprintf("%d", c.subsessionID))
+	v.Set("simsession_number", fmt.Sprintf("%d", sessionNumber))
+
+	if isTeamRace {
+		v.Set("team_id", fmt.Sprintf("%d", resultEntry.TeamID))
+	} else {
+		v.Set("cust_id", fmt.Sprintf("%d", resultEntry.CustID))
+	}
 	data, err := c.app.API.Get(
-		strings.TrimSpace(fmt.Sprintf(`
-			/data/results/lap_data?subsession_id=%d&simsession_number=%d&cust_id=%d
-			`, c.subsessionID, sessionNumber, resultEntry.CustID)),
+		strings.TrimSpace(fmt.Sprintf(`/data/results/lap_data?%s`, v.Encode())),
 	)
 	if err != nil {
 		log.Error("failed to get lap data", log.ErrorField(err))

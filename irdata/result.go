@@ -27,6 +27,7 @@ type (
 		EventLapsComplete       int                  `json:"event_laps_complete,omitempty"`
 		AssociatedSubsessionIDs []int                `json:"associated_subsession_ids,omitempty"`
 		SessionSplits           []EventSessionSplit  `json:"session_splits,omitempty"`
+		MaxTeamDrivers          int                  `json:"max_team_drivers,omitempty"`
 	}
 	EventSessionSplit struct {
 		SubsessionID int     `json:"subsession_id,omitempty"`
