@@ -122,7 +122,6 @@ func (c *collectLapDataCommand) run(ctx context.Context) error {
 	for i := range eventResult.SessionResults {
 		sResults := eventResult.SessionResults[i]
 		if sResults.SimSessionTypeName == "Race" {
-
 			incidents := c.incCollector(
 				eventResult.MaxTeamDrivers > 1,
 				sResults.SimSessionNumber,
